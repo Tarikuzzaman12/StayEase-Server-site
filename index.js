@@ -27,6 +27,15 @@ async function run() {
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+    // rooms relates apis
+    const roomsCollection=client.db('StayEase').collection('Rooms')
+    app.get('/rooms', async (req,res) => {
+      const cursor = roomsCollection.find()
+      const result =await cursor.toArray() 
+      res.send(result)
+  })
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -40,5 +49,5 @@ app.get('/',(req,res) => {
 })
 
 app.listen(port,() => {
-    console.log(`Room is waiting at: ${port}`)
+    console.log(`Server is Runing at: ${port}`)
 })
