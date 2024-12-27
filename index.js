@@ -1,13 +1,14 @@
-require('dotenv').config()
-const express =require('express')
-const cors =require('cors')
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
 const app = express();
+const { ObjectId } = require('mongodb');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 5000;
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uuqn6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -22,32 +23,63 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
-    // rooms relates apis
-    const roomsCollection=client.db('StayEase').collection('Rooms')
-    app.get('/rooms', async (req,res) => {
-      const cursor = roomsCollection.find()
-      const result =await cursor.toArray() 
-      res.send(result)
-  })
+    const roomsCollection = client.db('StayEase').collection('Rooms');
+    const bookingsCollection = client.db('StayEase').collection('bookings');
+
+    // Get all rooms
+    app.get('/rooms', async (req, res) => {
+      const rooms = await roomsCollection.find({}).toArray();
+      res.json(rooms);
+    });
+
+    // Get a specific room
+    app.get('/rooms/:id', async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const room = await roomsCollection.findOne(query);
+      res.json(room);
+    });
+
+    // Get all bookings
+    app.get('/bookings', async (req, res) => {
+      const bookings = await bookingsCollection.find({}).toArray();
+      res.json(bookings);
+    });
+
+    // Post booking
+    app.post('/bookings', async (req, res) => {
+      const bookingData = req.body;
+    
+      try {
+        // Insert the booking directly into the bookings collection
+        const result = await bookingsCollection.insertOne(bookingData);
+    
+        if (result.acknowledged) {
+          res.json({ success: true, message: "Room booked successfully!" });
+        } else {
+          res.status(500).json({ success: false, message: "Failed to book room" });
+        }
+      } catch (error) {
+        console.error("Error while booking room:", error);
+        res.status(500).json({ success: false, message: "An error occurred during booking" });
+      }
+    });
+          
 
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
   }
 }
+
 run().catch(console.log);
 
+app.get('/', (req, res) => {
+  res.send('There are many rooms here');
+});
 
-app.get('/',(req,res) => {
-    res.send('There are many room here')
-})
-
-app.listen(port,() => {
-    console.log(`Server is Runing at: ${port}`)
-})
+app.listen(port, () => {
+  console.log(`Server is Running at: ${port}`);
+});
