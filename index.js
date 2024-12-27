@@ -75,6 +75,21 @@ async function run() {
   const result = await bookingsCollection.findOne(query);
   res.send(result)
 })
+  //delete specific booking
+  app.delete('/bookings/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
+      if (result.deletedCount === 1) {
+        res.json({ success: true });
+      } else {
+        res.json({ success: false, message: "Booking not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  });
           
 
   } finally {
