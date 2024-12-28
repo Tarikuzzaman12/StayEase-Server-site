@@ -77,13 +77,25 @@ async function run() {
       }
     });
 
-    // get a specific booking
-    app.get("/bookings/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await bookingsCollection.findOne(query);
-      res.send(result);
+    app.get("/bookings", async (req, res) => {
+      const userEmail = req.query.
+      userEmail; // Get the user email from the query params
+      console.log("Received email:", userEmail); // Log the email to check what’s being received
+    
+      if (!userEmail) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+      }
+    
+      try {
+        const bookings = await bookingsCollection.find({ userEmail }).toArray();
+        res.json(bookings);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch bookings" });
+      }
     });
+    
+    
     //delete specific booking
     app.delete("/bookings/:id", async (req, res) => {
       const { id } = req.params;
@@ -162,7 +174,18 @@ async function run() {
       }
     });
     
-    
+  // Backend: Fetch reviews for a specific room
+app.get("/reviews/:roomId", async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    const reviews = await reviewsCollection.find({ roomId }).toArray(); // Query based on roomId
+    res.json(reviews); // Return reviews for the specific room
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    res.status(500).json({ message: "Failed to fetch reviews" });
+  }
+});
+
     
     
     
