@@ -209,13 +209,18 @@ app.delete("/bookings/:id", async (req, res) => {
 
     app.get("/reviews", async (req, res) => {
       try {
-        const reviews = await reviewsCollection.find().toArray(); // MongoDB থেকে ডেটা আনছে
-        res.status(200).json(reviews); // ক্লায়েন্টকে JSON রেসপন্স পাঠানো
+        const reviews = await reviewsCollection
+          .find()
+          .sort({ timestamp: -1 }) // Sort by timestamp in descending order
+          .toArray(); // Convert to an array
+    
+        res.status(200).json(reviews); // Send the sorted reviews to the client
       } catch (error) {
         console.error("Error fetching reviews:", error);
         res.status(500).json({ success: false, message: "Failed to fetch reviews" });
       }
     });
+    
     
   // Backend: Fetch reviews for a specific room
 app.get("/reviews/:roomId", async (req, res) => {
