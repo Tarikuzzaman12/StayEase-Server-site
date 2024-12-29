@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const moment = require("moment");
 const cors = require("cors");
 const app = express();
 const { ObjectId } = require("mongodb");
@@ -97,22 +98,64 @@ async function run() {
     
     
     //delete specific booking
-    app.delete("/bookings/:id", async (req, res) => {
-      const { id } = req.params;
-      try {
-        const result = await bookingsCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
-        if (result.deletedCount === 1) {
-          res.json({ success: true });
-        } else {
-          res.json({ success: false, message: "Booking not found" });
-        }
-      } catch (error) {
-        console.error("Error deleting booking:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-      }
-    });
+    // app.delete("/bookings/:id", async (req, res) => {
+    //   const { id } = req.params;
+    //   try {
+    //     const result = await bookingsCollection.deleteOne({
+    //       _id: new ObjectId(id),
+    //     });
+    //     if (result.deletedCount === 1) {
+    //       res.json({ success: true });
+    //     } else {
+    //       res.json({ success: false, message: "Booking not found" });
+    //     }
+    //   } catch (error) {
+    //     console.error("Error deleting booking:", error);
+    //     res.status(500).json({ success: false, message: "Server error" });
+    //   }
+    // });
+    
+
+app.delete("/bookings/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const booking = await bookingsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    const today = moment();
+    const bookingDate = moment(booking.bookingDate);
+
+    const daysDifference = bookingDate.diff(today, "days");
+
+    if (daysDifference < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Bookings can only be canceled at least 1 day before the booking date.",
+      });
+    }
+
+    const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 1) {
+      const room = await roomsCollection.updateOne(
+        { _id: new ObjectId(booking.roomId) },
+        { $set: { isAvailable: true } }
+      );
+
+      res.json({ success: true, message: "Booking canceled successfully." });
+    } else {
+      res.json({ success: false, message: "Failed to cancel the booking." });
+    }
+  } catch (error) {
+    console.error("Error canceling booking:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
 
     // update a specific bookins
    
